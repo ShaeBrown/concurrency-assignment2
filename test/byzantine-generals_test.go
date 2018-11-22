@@ -2,6 +2,7 @@ package test
 
 import (
 	"concurrency-assignment2/byzantinegenerals"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,47 +10,46 @@ import (
 
 var ATTACK = byzantinegenerals.ATTACK
 var RETREAT = byzantinegenerals.RETREAT
-var UNSURE = byzantinegenerals.UNSURE
-var TIE = byzantinegenerals.TIE
 
-func TestByzantineM2n7(t *testing.T) {
+func TestByzantine_m2_n7(t *testing.T) {
 	loyalty := []bool{true, true, true, true, true, false, false}
 	result := byzantinegenerals.OM(2, ATTACK, loyalty)
-	assert.Equal(t, []byzantinegenerals.Command{ATTACK, ATTACK, ATTACK, ATTACK, UNSURE, UNSURE}, result)
+	assert.Equal(t, ATTACK, result)
+	assert.Equal(t, ATTACK, byzantinegenerals.Result["01"])
+	assert.Equal(t, ATTACK, byzantinegenerals.Result["02"])
+	assert.Equal(t, ATTACK, byzantinegenerals.Result["03"])
+	assert.Equal(t, ATTACK, byzantinegenerals.Result["04"])
+	assert.Equal(t, RETREAT, byzantinegenerals.Result["05"])
+	assert.Equal(t, RETREAT, byzantinegenerals.Result["06"])
 }
 
-func TestByzantineM2n6(t *testing.T) {
-	loyalty := []bool{true, false, false, true, true, true}
-	result := byzantinegenerals.OM(2, ATTACK, loyalty)
-	assert.Equal(t, []byzantinegenerals.Command{UNSURE, UNSURE, RETREAT, RETREAT, RETREAT}, result)
-}
-
-func TestByzantineM1Tie(t *testing.T) {
+func TestByzantine_m1_tie(t *testing.T) {
 	loyalty := []bool{true, true, false}
 	result := byzantinegenerals.OM(1, ATTACK, loyalty)
-	assert.Equal(t, []byzantinegenerals.Command{TIE, UNSURE}, result)
+	fmt.Printf("%v\n", byzantinegenerals.Result)
+	assert.Equal(t, RETREAT, result)
 }
 
-func TestByzantineM1Attack(t *testing.T) {
+func TestByzantine_m1_attack(t *testing.T) {
 	loyalty := []bool{true, true, true, false}
 	result := byzantinegenerals.OM(1, ATTACK, loyalty)
-	assert.Equal(t, []byzantinegenerals.Command{ATTACK, ATTACK, UNSURE}, result)
+	assert.Equal(t, ATTACK, result)
 }
 
-func TestByzantineM1Retreat(t *testing.T) {
+func TestByzantine_m1_retreat(t *testing.T) {
 	loyalty := []bool{true, true, true, false}
 	result := byzantinegenerals.OM(1, RETREAT, loyalty)
-	assert.Equal(t, []byzantinegenerals.Command{RETREAT, RETREAT, UNSURE}, result)
+	assert.Equal(t, RETREAT, result)
 }
 
-func TestByzantineM0Attack(t *testing.T) {
+func TestByzantine_m0_attack(t *testing.T) {
 	loyalty := []bool{true, true, true}
 	result := byzantinegenerals.OM(0, ATTACK, loyalty)
-	assert.Equal(t, []byzantinegenerals.Command{ATTACK, ATTACK}, result)
+	assert.Equal(t, ATTACK, result)
 }
 
-func TestByzantineM0Retreat(t *testing.T) {
+func TestByzantine_m0_retreat(t *testing.T) {
 	loyalty := []bool{true, true, true}
 	result := byzantinegenerals.OM(0, RETREAT, loyalty)
-	assert.Equal(t, []byzantinegenerals.Command{RETREAT, RETREAT}, result)
+	assert.Equal(t, RETREAT, result)
 }

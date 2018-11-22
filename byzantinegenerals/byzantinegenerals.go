@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/deckarep/golang-set"
@@ -15,9 +16,10 @@ type Command int
 const (
 	ATTACK  Command = 2
 	RETREAT Command = 1
-	UNSURE  Command = 0
-	TIE     Command = 3
+	NONE    Command = 0
 )
+
+var Result = make(map[string]Command)
 
 func parse_command(Oc string) (Command, error) {
 	if Oc == "ATTACK" {
@@ -48,19 +50,6 @@ func parse_loyalty(G string) ([]bool, error) {
 	return result, nil
 }
 
-func create_order_array(n int) [][]Command {
-	order := make([][]Command, n)
-	for i := range order {
-		order[i] = make([]Command, n)
-	}
-	for i, _ := range order {
-		for j, _ := range order[i] {
-			order[i][j] = UNSURE
-		}
-	}
-	return order
-}
-
 func main() {
 	m := flag.Int("m", 0, "The level of recursion")
 	G := flag.String("G", "L,L,L", "The loyalty of the generals."+
@@ -81,8 +70,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	lieu := OM(*m, command, loyal)
-	fmt.Printf("Commands that each lieutenant will make: %v\n", get_command_array(lieu))
+	OM(*m, command, loyal)
 }
 
 func get_command_array(c []Command) []string {
@@ -98,10 +86,6 @@ func get_command_string(c Command) string {
 		return "ATTACK"
 	} else if c == RETREAT {
 		return "RETREAT"
-	} else if c == UNSURE {
-		return "UNSURE"
-	} else if c == TIE {
-		return "TIE"
 	}
 	return "NONE"
 }
@@ -114,31 +98,33 @@ func send_command(loyal bool, command Command) Command {
 	}
 }
 
-func send_to_lieutenants(commander int, command Command, n int, orders [][]Command, lieu mapset.Set) {
+func send_to_lieutenants(command Command, orders map[string]Command, lieu mapset.Set, prefix string) {
 	for _, el := range lieu.ToSlice() {
-		orders[el.(int)][commander] = command
+		i := el.(int)
+		p := prefix + strconv.Itoa(i)
+		orders[p] = command
 	}
 }
 
-func OM(m int, command Command, loyal []bool) []Command {
-	orders := create_order_array(len(loyal))
+func OM(m int, command Command, loyal []bool) Command {
+	Result = make(map[string]Command)
+	orders := make(map[string]Command)
 	lieu := mapset.NewSet()
 	for i := 1; i < len(loyal); i++ {
 		lieu.Add(i)
 	}
-	return om(m, 0, command, loyal, orders, lieu)
+	return om(m, 0, command, loyal, orders, lieu, "0")
 }
 
-func om(m int, commander int, command Command, loyal []bool, orders [][]Command, lieu mapset.Set) []Command {
-	n := len(loyal)
+func om(m int, commander int, command Command, loyal []bool, orders map[string]Command, lieu mapset.Set, prefix string) Command {
 	if m == 0 {
-		send_to_lieutenants(commander, command, n, orders, lieu)
-		return use_command(n, command)
+		send_to_lieutenants(command, orders, lieu, prefix)
+		Result[prefix] = command
+		return command
 	} else {
-		send_to_lieutenants(commander, command, n, orders, lieu)
-		recursive_step(m, commander, command, loyal, orders, lieu)
-		maj := get_majority(orders, commander, loyal)
-		return maj
+		send_to_lieutenants(command, orders, lieu, prefix)
+		recursive_step(m, commander, command, loyal, orders, lieu, prefix)
+		return get_majority(orders, lieu, prefix)
 	}
 }
 
@@ -150,47 +136,33 @@ func use_command(n int, command Command) []Command {
 	return order
 }
 
-func recursive_step(m int, commander int, command Command, loyal []bool, orders [][]Command, lieu mapset.Set) {
+func recursive_step(m int, commander int, command Command, loyal []bool, orders map[string]Command, lieu mapset.Set, prefix string) {
 	for _, el := range lieu.ToSlice() {
 		i := el.(int)
 		c := mapset.NewSetFromSlice(lieu.ToSlice())
 		c.Remove(i)
-		om(m-1, i, send_command(loyal[i], command), loyal, orders, c)
+		p := prefix + strconv.Itoa(i)
+		om(m-1, i, send_command(loyal[i], command), loyal, orders, c, p)
 	}
 }
 
-func get_majority(orders [][]Command, commander int, loyalty []bool) []Command {
-	majority := make([]Command, len(orders)-1)
-	k := 0
-	for i, lieu := range orders {
-		if i != commander {
-			if !loyalty[i] {
-				majority[k] = UNSURE
-				k += 1
-				continue
-			}
-			num_attack := 0
-			num_retreat := 0
-			for j, command := range lieu {
-				if i != j {
-					if command == ATTACK {
-						num_attack += 1
-					} else if command == RETREAT {
-						num_retreat += 1
-					}
-				}
-			}
-			var result Command
-			if num_attack > num_retreat {
-				result = ATTACK
-			} else if num_retreat > num_attack {
-				result = RETREAT
-			} else {
-				result = TIE
-			}
-			majority[k] = result
-			k += 1
+func get_majority(orders map[string]Command, lieu mapset.Set, prefix string) Command {
+	num_attack := 0
+	num_retreat := 0
+	for _, el := range lieu.ToSlice() {
+		i := el.(int)
+		index := prefix + strconv.Itoa(i)
+		if Result[index] == ATTACK {
+			num_attack += 1
+		} else if Result[index] == RETREAT {
+			num_retreat += 1
 		}
 	}
-	return majority
+	if num_attack > num_retreat {
+		Result[prefix] = ATTACK
+		return ATTACK
+	} else {
+		Result[prefix] = RETREAT
+		return RETREAT
+	}
 }
