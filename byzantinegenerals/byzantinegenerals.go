@@ -1,12 +1,7 @@
 package byzantinegenerals
 
 import (
-	"errors"
-	"flag"
-	"fmt"
-	"os"
 	"strconv"
-	"strings"
 
 	"github.com/deckarep/golang-set"
 )
@@ -20,75 +15,6 @@ const (
 )
 
 var Result = make(map[string]Command)
-
-func parse_command(Oc string) (Command, error) {
-	if Oc == "ATTACK" {
-		return ATTACK, nil
-	} else if Oc == "RETREAT" {
-		return RETREAT, nil
-	}
-	return 0, errors.New("Oc should be ATTACK or RETREAT")
-}
-
-func parse_loyalty(G string) ([]bool, error) {
-	l := strings.Split(G, ",")
-	if len(l) < 2 {
-		return nil, errors.New("Less than 2 generals." +
-			"Provide list in comma seperated values of \"L\" or \"T\"")
-	}
-	result := make([]bool, len(l))
-	for i, loyalty := range l {
-		if loyalty == "L" {
-			result[i] = true
-		} else if loyalty == "T" {
-			result[i] = false
-		} else {
-			return nil, errors.New("Invalid value." +
-				"Provide list in comma seperated values of \"L\" or \"T\"")
-		}
-	}
-	return result, nil
-}
-
-func main() {
-	m := flag.Int("m", 0, "The level of recursion")
-	G := flag.String("G", "L,L,L", "The loyalty of the generals."+
-		"Provide list in comma seperated values of \"L\" or \"T\"")
-	Oc := flag.String("Oc", "ATTACK", "The order the commander gives: ATTACK or RETREAT")
-	flag.Parse()
-	if *m < 0 {
-		fmt.Println("m should be greater than 0")
-		os.Exit(1)
-	}
-	command, err := parse_command(*Oc)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	loyal, err := parse_loyalty(*G)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	OM(*m, command, loyal)
-}
-
-func get_command_array(c []Command) []string {
-	c_str := make([]string, len(c))
-	for i, command := range c {
-		c_str[i] = get_command_string(command)
-	}
-	return c_str
-}
-
-func get_command_string(c Command) string {
-	if c == ATTACK {
-		return "ATTACK"
-	} else if c == RETREAT {
-		return "RETREAT"
-	}
-	return "NONE"
-}
 
 func send_command(loyal bool, command Command) Command {
 	if loyal {
